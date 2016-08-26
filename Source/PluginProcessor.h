@@ -56,7 +56,14 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+	float* getBuffer();
+	int getBufferLen();
 private:
+	bool mIsProcessing = false;
+	float* mBuffer;
+	float* mInternalBuffer;
+	int mBufferLen;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (USpectrumAnalyzerAudioProcessor)
 };

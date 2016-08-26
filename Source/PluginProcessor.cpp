@@ -19,6 +19,8 @@ USpectrumAnalyzerAudioProcessor::USpectrumAnalyzerAudioProcessor()
 
 USpectrumAnalyzerAudioProcessor::~USpectrumAnalyzerAudioProcessor()
 {
+	delete mBuffer;
+	delete mInternalBuffer;
 }
 
 //==============================================================================
@@ -77,8 +79,11 @@ void USpectrumAnalyzerAudioProcessor::changeProgramName (int index, const String
 //==============================================================================
 void USpectrumAnalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+	//if (mBuffer != nullptr) delete mBuffer;
+	mBuffer = new float[samplesPerBlock];
+	mInternalBuffer = new float[samplesPerBlock];
+
+	mBufferLen = samplesPerBlock;
 }
 
 void USpectrumAnalyzerAudioProcessor::releaseResources()
@@ -114,26 +119,29 @@ bool USpectrumAnalyzerAudioProcessor::setPreferredBusArrangement (bool isInput, 
 
 void USpectrumAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
 {
+	
+
     const int totalNumInputChannels  = getTotalNumInputChannels();
     const int totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
     for (int i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        float* channelData = buffer.getWritePointer (channel);
+		//float* channelData = buffer.getWritePointer(channel);
+		const float* channelData = buffer.getReadPointer(channel);
 
-        // ..do something to the data...
+        // copy input data buffer for gui
+		for (int i = 0; i < buffer.getNumSamples(); i++) {
+			mInternalBuffer[i] = channelData[i];
+			mBuffer[i] = channelData[i];
+		}
     }
+
+	mIsProcessing = true;
+	memcpy(mBuffer, mInternalBuffer, mBufferLen);
+	mIsProcessing = false;
 }
 
 //==============================================================================
@@ -166,4 +174,15 @@ void USpectrumAnalyzerAudioProcessor::setStateInformation (const void* data, int
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new USpectrumAnalyzerAudioProcessor();
+}
+
+float* USpectrumAnalyzerAudioProcessor::getBuffer()
+{
+	//if (mIsProcessing) return nullptr;
+	return mBuffer;
+}
+
+int USpectrumAnalyzerAudioProcessor::getBufferLen()
+{
+	return mBufferLen;
 }
