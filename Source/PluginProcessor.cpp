@@ -19,8 +19,6 @@ USpectrumAnalyzerAudioProcessor::USpectrumAnalyzerAudioProcessor()
 
 USpectrumAnalyzerAudioProcessor::~USpectrumAnalyzerAudioProcessor()
 {
-	delete mBuffer;
-	delete mInternalBuffer;
 }
 
 //==============================================================================
@@ -79,11 +77,6 @@ void USpectrumAnalyzerAudioProcessor::changeProgramName (int index, const String
 //==============================================================================
 void USpectrumAnalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-	//if (mBuffer != nullptr) delete mBuffer;
-	mBuffer = new float[samplesPerBlock];
-	mInternalBuffer = new float[samplesPerBlock];
-
-	mBufferLen = samplesPerBlock;
 }
 
 void USpectrumAnalyzerAudioProcessor::releaseResources()
@@ -119,8 +112,6 @@ bool USpectrumAnalyzerAudioProcessor::setPreferredBusArrangement (bool isInput, 
 
 void USpectrumAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
 {
-	
-
     const int totalNumInputChannels  = getTotalNumInputChannels();
     const int totalNumOutputChannels = getTotalNumOutputChannels();
 
@@ -130,18 +121,11 @@ void USpectrumAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, M
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
 		//float* channelData = buffer.getWritePointer(channel);
-		const float* channelData = buffer.getReadPointer(channel);
-
-        // copy input data buffer for gui
-		for (int i = 0; i < buffer.getNumSamples(); i++) {
-			mInternalBuffer[i] = channelData[i];
-			mBuffer[i] = channelData[i];
-		}
+		//const float* channelData = buffer.getReadPointer(channel);
+		/*for (int i = 0; i < buffer.getNumSamples(); i++) {}*/
     }
 
-	mIsProcessing = true;
-	memcpy(mBuffer, mInternalBuffer, mBufferLen);
-	mIsProcessing = false;
+	mAudioSampleBuffer.makeCopyOf(buffer);
 }
 
 //==============================================================================
@@ -152,7 +136,7 @@ bool USpectrumAnalyzerAudioProcessor::hasEditor() const
 
 AudioProcessorEditor* USpectrumAnalyzerAudioProcessor::createEditor()
 {
-    return new USpectrumAnalyzerAudioProcessorEditor (*this);
+	return new USpectrumAnalyzerAudioProcessorEditor (*this);
 }
 
 //==============================================================================
@@ -176,13 +160,7 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
     return new USpectrumAnalyzerAudioProcessor();
 }
 
-float* USpectrumAnalyzerAudioProcessor::getBuffer()
+AudioSampleBuffer USpectrumAnalyzerAudioProcessor::getAudioSampleBuffer()
 {
-	//if (mIsProcessing) return nullptr;
-	return mBuffer;
-}
-
-int USpectrumAnalyzerAudioProcessor::getBufferLen()
-{
-	return mBufferLen;
+	return mAudioSampleBuffer;
 }

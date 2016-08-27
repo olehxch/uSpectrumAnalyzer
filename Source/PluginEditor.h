@@ -15,7 +15,11 @@
 #include "PluginProcessor.h"
 #include "vector"
 #include <cmath>
+#include <algorithm>
+#include <string>
 #include "EventTimer.h"
+
+#define DEBUG true
 
 //==============================================================================
 /**
@@ -31,21 +35,18 @@ public:
     void resized() override;
 
 	void timerCallback() override;
-	void fft(float* buffer, int len);
-	float findmax(float * buf, int len);
-
+		
+	void processFFT();
+	void updateSpectrumGraphics(float* buffer, int bufferLen, float scale = 10.0, float step = 1.0);
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     USpectrumAnalyzerAudioProcessor& processor;
-
 	EventTimer mTimer;
+	juce::AudioSampleBuffer mAudioSampleBuffer;
 
 	int mWidth;
 	int mHeight;
-
-	//float* mBuffer;
-	//int mBufferLen;
 
 	float* fftBuffer;
 	// power of 2
@@ -54,8 +55,10 @@ private:
 	int ffthalflen = floor(fftbuflen / 2);
 
 	// prevents drawing when buffer is updating with new data
-	bool m_locked = false;
+	bool mUILock = false;
+	bool mProcessingLock = false;
 
+	FFT fft;
 	std::vector< Line<float> > lines;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (USpectrumAnalyzerAudioProcessorEditor)

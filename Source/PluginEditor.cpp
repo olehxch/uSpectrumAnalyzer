@@ -13,103 +13,100 @@
 
 
 //==============================================================================
-USpectrumAnalyzerAudioProcessorEditor::USpectrumAnalyzerAudioProcessorEditor (USpectrumAnalyzerAudioProcessor& p)
-    : AudioProcessorEditor (&p), processor (p)
+USpectrumAnalyzerAudioProcessorEditor::USpectrumAnalyzerAudioProcessorEditor(USpectrumAnalyzerAudioProcessor& p)
+	: AudioProcessorEditor(&p), processor(p),
+	fft(fftsize - 1, false),
+	mAudioSampleBuffer(2, 440)
 {
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to be.
-    setSize (400, 300);
+    setSize (600, 300);
 
 	mWidth = this->getWidth();
 	mHeight = this->getHeight();
 
 	fftBuffer = new float[fftbuflen] { 0 };
 
+	// update GUI at 30fps
+	this->startTimer(33);
+	
 	mTimer.setCallback([this]() {
-		//this->timerCallback();
-		fft(processor.getBuffer(), processor.getBufferLen());
-		repaint();
+		mUILock = true;
+
+		mAudioSampleBuffer.makeCopyOf(processor.getAudioSampleBuffer());
+		processFFT();
+
+		mUILock = false;
 	});
-	mTimer.startTimer(50);
+	mTimer.startTimer(100);
 }
 
 USpectrumAnalyzerAudioProcessorEditor::~USpectrumAnalyzerAudioProcessorEditor()
 {
-	//if(mBuffer != nullptr) delete mBuffer;
 	mTimer.stopTimer();
+	delete fftBuffer;
 }
 
 //==============================================================================
 void USpectrumAnalyzerAudioProcessorEditor::paint (Graphics& g)
 {
-	g.fillAll(Colour::fromRGB(0xF1, 0xF0, 0xFE)); // #F1F0FE
+	g.fillAll(Colours::white);
 
-	g.drawLine(0, 0, mWidth, 0);
-	g.drawText("Spectrum Analyzer", 0, 5, mWidth, 10, Justification::centred);
-
-	if (!m_locked) {
+	if (!mUILock) {
 		g.setColour(Colour::fromRGB(0x2B, 0x2C, 0x43)); // set line color
 		std::vector<Line<float> > copyLines(lines);
 		for (auto line : copyLines) {
 			g.drawLine(line, 2.0);
 		}
 	}
+
+	g.setColour(Colours::darkgreen);
+	g.drawText("Spectrum Analyzer", 0, 5, mWidth, 10, Justification::centred);
+
+	g.drawText("Samples: " + std::to_string(mAudioSampleBuffer.getNumSamples()), 0, 5, 150, 10, Justification::left, false);
+	g.drawText("Channels: " + std::to_string(mAudioSampleBuffer.getNumChannels()), 0, 20, 150, 10, Justification::left, false);
+	g.drawText("Magnitude: " + std::to_string(mAudioSampleBuffer.getMagnitude(0, mAudioSampleBuffer.getNumSamples())), 0, 35, 150, 10, Justification::left, false);
 }
 
 void USpectrumAnalyzerAudioProcessorEditor::resized()
 {
-	//setBounds(getBounds());
 }
 
 void USpectrumAnalyzerAudioProcessorEditor::timerCallback()
 {
-	//if (m_locked) return;
-	
-	m_locked = true;
-	fft(processor.getBuffer(), processor.getBufferLen());
-	m_locked = false;
-
 	repaint();
 }
 
-void USpectrumAnalyzerAudioProcessorEditor::fft(float* buffer, int len) 
+void USpectrumAnalyzerAudioProcessorEditor::processFFT()
 {
-	if (buffer == nullptr) return;
+	const float* read = mAudioSampleBuffer.getReadPointer(0);
+	int len = mAudioSampleBuffer.getNumSamples();
 
-	//const int fftsize = 10;
-	//const int fftbuflen = pow(2, fftsize);
-	//const int halfbuflen = floor(fftbuflen / 2);
+	juce::Range<float> minmax = mAudioSampleBuffer.findMinMax(0, 0, mAudioSampleBuffer.getNumSamples());
 
-	// do this to prevent over array copying
 	if (len > fftbuflen) len = fftbuflen;
 
-	//float* fftBuffer = new float[fftbuflen] { 0 };
-	memcpy(fftBuffer, buffer, len);
+	// copy data from AudioSampleBuffer to internal buffer for fft transformations
+	for (int i = 0; i < len; i++) {
+		fftBuffer[i] = read[i];
+	}
 
-	FFT fft(fftsize - 1, false);
+	float pos = 0;
+	float scale = (float)mHeight / minmax.getEnd(); //findmax(fftBuffer, len);
+	float step = (float)ffthalflen / (float)mWidth;
 
-	//const int fftBufferSize = juce::nextPowerOfTwo(len);
-	//int powerOfTwo = log(fftBufferSize) / log(2);
-	//int halfBuffer = fftBufferSize / 2;
-
-	//float* fftBuffer = new float[fftBufferSize] { 0 };
-	//memcpy(fftBuffer, buffer, len);
-
-	//FFT fft(powerOfTwo - 1, false);
 	fft.performFrequencyOnlyForwardTransform(fftBuffer);
+	updateSpectrumGraphics(fftBuffer, len/2, scale, step);
+}
+
+void USpectrumAnalyzerAudioProcessorEditor::updateSpectrumGraphics(float* buffer, int bufferHalfLen, float scale, float step)
+{
 	lines.clear();
 
 	float pos = 0;
-	float scale = (float)mHeight / findmax(fftBuffer, len);
-	float step = (float)ffthalflen / (float)mWidth;
+	for (int i = 0; i < bufferHalfLen; i++) {
+		float cur = buffer[i] * scale;
 
-	//if (std::isinf(scale) || scale != scale) scale = 1.0;
-
-	for (int i = 0; i < ffthalflen; i++) {
-		float cur = fftBuffer[i] * scale;
-
-		// check if cur is NaN
-		if (cur != cur) cur = 0.0;
+		// check if cur is inf or NaN 
+		if (std::isinf(cur) || cur != cur) cur = 0.0;
 
 		Line<float> l;
 		l.setStart(pos, mHeight);
@@ -119,15 +116,4 @@ void USpectrumAnalyzerAudioProcessorEditor::fft(float* buffer, int len)
 
 		pos += step;
 	}
-}
-
-float USpectrumAnalyzerAudioProcessorEditor::findmax(float * buf, int len)
-{
-	int i = len;
-	float max = 0.0;
-	while (i--) {
-		if (buf[i] > max) max = buf[i];
-	}
-
-	return max;
 }

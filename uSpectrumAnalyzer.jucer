@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="xToCIV" name="uSpectrumAnalyzer" projectType="audioplug"
               version="1.0.0" bundleIdentifier="com.northvoid.uSpectrumAnalyzer"
-              includeBinaryInAppConfig="1" buildVST="1" buildVST3="0" buildAU="1"
+              includeBinaryInAppConfig="1" buildVST="1" buildVST3="0" buildAU="0"
               buildAUv3="0" buildRTAS="0" buildAAX="0" pluginName="uSpectrumAnalyzer"
               pluginDesc="uSpectrumAnalyzer" pluginManufacturer="northvoid"
               pluginManufacturerCode="Manu" pluginCode="Xtoc" pluginChannelConfigs=""
@@ -24,12 +24,14 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <VS2015 targetFolder="Builds/VisualStudio2015">
+    <VS2015 targetFolder="Builds/VisualStudio2015" vstFolder="">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="1" targetName="uSpectrumAnalyzer"/>
+                       isDebug="1" optimisation="1" targetName="uSpectrumAnalyzer" postbuildCommand=""
+                       useRuntimeLibDLL="0"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="0" optimisation="3" targetName="uSpectrumAnalyzer"/>
+                       isDebug="0" optimisation="3" targetName="uSpectrumAnalyzer" postbuildCommand="copy D:\Medium\jucetuts\uSpectrumAnalyzer\Builds\VisualStudio2015\Debug\uSpectrumAnalyzer.dll C:\AudioProgramming\vstdebug\uSpectrumAnalyzer.dll"
+                       useRuntimeLibDLL="0"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="C:/JUCE/modules"/>
