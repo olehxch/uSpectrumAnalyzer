@@ -77,6 +77,7 @@ void USpectrumAnalyzerAudioProcessor::changeProgramName (int index, const String
 //==============================================================================
 void USpectrumAnalyzerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    mAudioSampleBuffer.setSize(2, samplesPerBlock);
 }
 
 void USpectrumAnalyzerAudioProcessor::releaseResources()
@@ -112,20 +113,7 @@ bool USpectrumAnalyzerAudioProcessor::setPreferredBusArrangement (bool isInput, 
 
 void USpectrumAnalyzerAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
 {
-    const int totalNumInputChannels  = getTotalNumInputChannels();
-    const int totalNumOutputChannels = getTotalNumOutputChannels();
-
-    for (int i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
-
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-		//float* channelData = buffer.getWritePointer(channel);
-		//const float* channelData = buffer.getReadPointer(channel);
-		/*for (int i = 0; i < buffer.getNumSamples(); i++) {}*/
-    }
-
-	mAudioSampleBuffer.makeCopyOf(buffer);
+    mAudioSampleBuffer.makeCopyOf(buffer);
 }
 
 //==============================================================================
@@ -136,7 +124,7 @@ bool USpectrumAnalyzerAudioProcessor::hasEditor() const
 
 AudioProcessorEditor* USpectrumAnalyzerAudioProcessor::createEditor()
 {
-	return new USpectrumAnalyzerAudioProcessorEditor (*this);
+    return new USpectrumAnalyzerAudioProcessorEditor (*this);
 }
 
 //==============================================================================
@@ -162,5 +150,5 @@ AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 
 AudioSampleBuffer USpectrumAnalyzerAudioProcessor::getAudioSampleBuffer()
 {
-	return mAudioSampleBuffer;
+    return mAudioSampleBuffer;
 }

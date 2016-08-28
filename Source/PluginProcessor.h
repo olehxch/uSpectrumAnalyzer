@@ -12,7 +12,6 @@
 #define PLUGINPROCESSOR_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include <atomic>
 
 //==============================================================================
 /**
@@ -56,14 +55,9 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-	float* getBuffer();
-	int getBufferLen();
-
-	juce::AudioSampleBuffer getAudioSampleBuffer();
+    AudioSampleBuffer getAudioSampleBuffer();
 private:
-
-	juce::AudioSampleBuffer mProcessorAudioSampleBuffer;
-	juce::AudioSampleBuffer mAudioSampleBuffer;
+    AudioSampleBuffer mAudioSampleBuffer;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (USpectrumAnalyzerAudioProcessor)
