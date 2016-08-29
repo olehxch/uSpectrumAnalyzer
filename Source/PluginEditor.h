@@ -38,7 +38,7 @@ public:
     void timerCallback() override;
         
     void processFFT();
-    void updateSpectrumGraphics(float* buffer, int bufferLen, float scale = 10.0, int step = 1);
+    void updateSpectrumGraphics(float* buffer, int bufferLen, float scale = 10.0, float step = 1.0);
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -53,7 +53,6 @@ private:
     // power of 2
     int fftsize = 10;
     int fftbuflen = pow(2, fftsize);        // 1024 samples
-    int ffthalflen = floor(fftbuflen / 2);  // 512 samples
 
     // prevents drawing when buffer is updating with new data
     bool mUILock = false;

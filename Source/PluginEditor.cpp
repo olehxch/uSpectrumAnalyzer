@@ -29,15 +29,8 @@ USpectrumAnalyzerAudioProcessorEditor::USpectrumAnalyzerAudioProcessorEditor(USp
     //this->startTimer(16);
     
     mTimer.setCallback([this]() {
-        mUILock = true;
-        //if (mUILock.try_lock()) {
-
-            mAudioSampleBuffer.makeCopyOf(processor.getAudioSampleBuffer());
-            processFFT();
-
-            //mUILock.unlock();
-        //}
-        mUILock = false;
+        mAudioSampleBuffer.makeCopyOf(processor.getAudioSampleBuffer());
+        processFFT();
 
         repaint();
     });
@@ -55,14 +48,10 @@ void USpectrumAnalyzerAudioProcessorEditor::paint (Graphics& g)
 {
     g.fillAll(Colours::white);
 
-    if (!mUILock) {
-    //if(mUILock.try_lock()) {
-        g.setColour(Colour::fromRGB(0x2B, 0x2C, 0x43)); // set line color
-        std::vector<Line<float> > copyLines(lines);
-        for (auto line : copyLines) {
-            g.drawLine(line, 2.0);
-        }
-        //mUILock.unlock();
+    g.setColour(Colours::darkblue);
+    std::vector<Line<float> > copyLines(lines);
+    for (auto line : copyLines) {
+        g.drawLine(line, 1.0);
     }
 
     g.setColour(Colours::darkgreen);
@@ -101,27 +90,34 @@ void USpectrumAnalyzerAudioProcessorEditor::processFFT()
         }
     }
 
-    float scale = (float)mHeight / minmax.getEnd();
-    int step = mWidth / ffthalflen;
+    float scale = mHeight;
+    float fftfreqs = fft.getSize() / 2;
+    float step = (float)mWidth / (float)mAudioSampleBuffer.getNumSamples();
 
     fft.performFrequencyOnlyForwardTransform(fftBuffer);
-    updateSpectrumGraphics(fftBuffer, ffthalflen, scale, step);
+    updateSpectrumGraphics(fftBuffer, mAudioSampleBuffer.getNumSamples(), scale, step);
 }
 
-void USpectrumAnalyzerAudioProcessorEditor::updateSpectrumGraphics(float* buffer, int bufferHalfLen, float scale, int step)
+void USpectrumAnalyzerAudioProcessorEditor::updateSpectrumGraphics(float* buffer, int len, float scale, float step)
 {
     lines.clear();
 
+    
+
     float pos = 0;
-    for (int i = 0; i < bufferHalfLen; i++) {
+    for (int i = 0; i < len; i++) {
         float cur = buffer[i] * scale;
 
         // check if cur is inf or NaN 
-        if (std::isinf(cur) || cur != cur) cur = 0.0;
+        //if (std::isinf(cur) || cur != cur) cur = 0.0;
 
         Line<float> l;
         l.setStart(pos, mHeight);
-        l.setEnd(pos, mHeight - cur);
+
+        float maxh = (mHeight - cur);
+        if (maxh > mHeight) maxh = mHeight - 5.0;
+
+        l.setEnd(pos, maxh);
 
         lines.push_back(l);
 
