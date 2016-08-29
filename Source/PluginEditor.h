@@ -38,7 +38,7 @@ public:
     void timerCallback() override;
         
     void processFFT();
-    void updateSpectrumGraphics(float* buffer, int bufferLen, float scale = 10.0, float step = 1.0);
+    void updateSpectrumGraphics(float* buffer, int bufferLen);
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -51,11 +51,10 @@ private:
 
     float* fftBuffer;
     // power of 2
-    int fftsize = 10;
+    int fftsize = 11;
     int fftbuflen = pow(2, fftsize);        // 1024 samples
 
-    // prevents drawing when buffer is updating with new data
-    bool mUILock = false;
+    float mLineWidth { 1.0 };
 
     FFT fft;
     std::vector< Line<float> > lines;

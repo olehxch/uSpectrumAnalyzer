@@ -34,7 +34,7 @@ USpectrumAnalyzerAudioProcessorEditor::USpectrumAnalyzerAudioProcessorEditor(USp
 
         repaint();
     });
-    mTimer.startTimer(30);
+    mTimer.startTimer(16);
 }
 
 USpectrumAnalyzerAudioProcessorEditor::~USpectrumAnalyzerAudioProcessorEditor()
@@ -51,7 +51,7 @@ void USpectrumAnalyzerAudioProcessorEditor::paint (Graphics& g)
     g.setColour(Colours::darkblue);
     std::vector<Line<float> > copyLines(lines);
     for (auto line : copyLines) {
-        g.drawLine(line, 1.0);
+        g.drawLine(line, mLineWidth);
     }
 
     g.setColour(Colours::darkgreen);
@@ -77,8 +77,6 @@ void USpectrumAnalyzerAudioProcessorEditor::processFFT()
     const float* readRight = mAudioSampleBuffer.getReadPointer(1);
     int len = mAudioSampleBuffer.getNumSamples();
 
-    juce::Range<float> minmax = mAudioSampleBuffer.findMinMax(0, 0, mAudioSampleBuffer.getNumSamples());
-
     if (len > fftbuflen) len = fftbuflen;
 
     // mix left and right channels to mono and copy them to fft buffer with zero-paddings
@@ -90,19 +88,18 @@ void USpectrumAnalyzerAudioProcessorEditor::processFFT()
         }
     }
 
-    float scale = mHeight;
-    float fftfreqs = fft.getSize() / 2;
-    float step = (float)mWidth / (float)mAudioSampleBuffer.getNumSamples();
-
     fft.performFrequencyOnlyForwardTransform(fftBuffer);
-    updateSpectrumGraphics(fftBuffer, mAudioSampleBuffer.getNumSamples(), scale, step);
+
+    // we need only first half of data because it is mirrored
+    updateSpectrumGraphics(fftBuffer, fft.getSize() / 2);
 }
 
-void USpectrumAnalyzerAudioProcessorEditor::updateSpectrumGraphics(float* buffer, int len, float scale, float step)
+void USpectrumAnalyzerAudioProcessorEditor::updateSpectrumGraphics(float* buffer, int len)
 {
     lines.clear();
 
-    
+    float scale = mHeight;
+    mLineWidth = (float)mWidth / (float)len;
 
     float pos = 0;
     for (int i = 0; i < len; i++) {
@@ -118,9 +115,7 @@ void USpectrumAnalyzerAudioProcessorEditor::updateSpectrumGraphics(float* buffer
         if (maxh > mHeight) maxh = mHeight - 5.0;
 
         l.setEnd(pos, maxh);
-
         lines.push_back(l);
-
-        pos += step;
+        pos += mLineWidth;
     }
 }
